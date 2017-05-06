@@ -1,0 +1,55 @@
+#include <Arduino.h>
+#include "hyundairemote.h"
+
+const int HyundaiRemote::RECEIVED_NOTHING = 0;
+const int HyundaiRemote::STOP = 1;
+const int HyundaiRemote::LEFT = 2;
+const int HyundaiRemote::RIGHT = 3;
+const int HyundaiRemote::FORWARD = 4;
+const int HyundaiRemote::BACKWARD = 5;
+const int HyundaiRemote::HIT = 6;
+
+HyundaiRemote::HyundaiRemote(int pin):irrecv(pin) {
+}
+
+int HyundaiRemote::decodeValue(unsigned int button) {
+    if ((button == 21) || (button == 22) || (button == 79) || (button == 143)) { // RIGHT,LEFT
+      //I changed LEFT/RIGHT because originally it boosts the appropriate
+      //motor, however, robot turns to the opposite direction
+      return (((button == 21)||(button == 79)) ? LEFT : RIGHT);
+    }
+    if ((button == 18) || (button == 19)||(button == 47) || (button == 207)) { // FW, BW
+      return(((button == 18)||(button == 47)) ? FORWARD : BACKWARD);
+    }
+    if ((button == 37) || (button == 38)) { // tune-slower
+      return((button == 37) ? LEFT : RIGHT);
+    }
+    if (button == 20 || button == 51) { //OK or exit
+      return STOP;
+    }
+
+    if (button == 49||(button == 239)) { //OK or exit
+      return HIT;
+    }
+
+    Serial.println(button);
+
+    return RECEIVED_NOTHING;
+}
+
+int HyundaiRemote::getValue() {
+    int v = RECEIVED_NOTHING;
+
+    if (irrecv.decode(&results)) {
+        unsigned int button = (results.value) % 256;
+        irrecv.resume(); // resume receiver
+
+        v = decodeValue(button);
+    }
+
+    return v;
+}
+
+void HyundaiRemote::enable() {
+    irrecv.enableIRIn();
+}
